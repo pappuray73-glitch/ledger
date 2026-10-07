@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your School Name</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#14284b;--mut:#566179;--acc:#14284b;--accink:#fff;--gold:#f2b21a;--line:#dde2ee;--bad:#b3261e;--ok:#1b7a43;--hero:#14284b}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1626;--card:#16213a;--ink:#e9eefb;--mut:#9aa7c4;--acc:#f2b21a;--accink:#14284b;--line:#27355a;--bad:#ff8a80;--ok:#6fe0a0;--hero:#0a1120}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1,h2,h3{font-family:Charter,Georgia,serif;line-height:1.2;margin:0}
+h2{font-size:1.3rem;margin:0 0 12px}h3{font-size:1.02rem;margin:12px 0 4px}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.in{max-width:900px;margin:0 auto;padding:0 16px}
+#bar{background:var(--hero);color:#fff}
+#bar .in{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap}
+#bar b{font-family:Charter,Georgia,serif;font-size:1.1rem}
+#bar button{color:#fff;border-color:#ffffff55}
+.hero{background:var(--hero);color:#fff;padding:36px 0 48px}
+.hero h1{font-size:clamp(2rem,6vw,3.2rem);max-width:16ch}
+.hero p{max-width:48ch;opacity:.88}
+.hero button{background:var(--gold);color:#14284b}
+section{padding:28px 0 4px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.box,.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.card{margin:0}.card.ev{border-left:5px solid var(--gold)}
+.card p{margin:4px 0 0;color:var(--mut);white-space:pre-line}
+label{display:block;font-size:.9rem;color:var(--mut);margin:10px 0 0}
+input,select,textarea{display:block;width:100%;margin-top:4px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:80px}
+button{font:inherit;cursor:pointer;border:0;border-radius:8px;padding:9px 14px;background:var(--acc);color:var(--accink);font-weight:600}
+button.alt{background:transparent;color:var(--ink);border:1px solid var(--line);padding:6px 10px;font-weight:500}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
+.tabs button{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.tabs button.on{background:var(--acc);color:var(--accink)}
+.row{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+@media(max-width:520px){.row{grid-template-columns:1fr}}
+.line{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid var(--line);padding:9px 0;flex-wrap:wrap}
+.line:first-of-type{border-top:0}
+label.chk{display:flex;gap:10px;align-items:center;color:var(--ink);font-size:1rem;margin:0;padding:8px 0;border-top:1px solid var(--line)}
+label.chk input{width:auto;margin:0}
+.sc{width:90px;margin:0}
+.big{font:700 1.8rem Charter,Georgia,serif}
+.meta{font-size:.84rem;color:var(--mut)}.msg{color:var(--mut)}.err{color:var(--bad)}.ok{color:var(--ok)}
+p{margin:6px 0}
+footer{margin-top:36px;padding:22px 0;border-top:1px solid var(--line);color:var(--mut);font-size:.9rem}
+</style>
+</head>
+<body>
+<div id="bar"><div class="in"><b id="brand"></b><div id="nav"></div></div></div>
+<main id="v" class="in"></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/* ===== 1. EDIT THESE ===== */
+const SUPABASE_URL = "https://anbtyyjqiuxtzxvqalll.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuYnR5eWpxaXV4dHp4dnFhbGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzODgzODQsImV4cCI6MjEwNjk2NDM4NH0.Ff0Zs2Pm4yRhoNBVyRQ0RQqEWv5QLVS98HYgVwSzcYM"; // anon key only, never service_role
+const CFG = { name: "Your School Name", phone: "00000 00000", email: "office@yourschool.in", address: "Full address, city, PIN", welcome: "Admissions, announcements and your child's school record, all in one place." };
+const SECTIONS = { announcements: "Announcements", events: "Events", achievements: "Achievements", admissions: "Admissions" };
+/* ========================== */
+
+const $ = id => document.getElementById(id);
+let db;
+try {
+  if (typeof supabase === "undefined") throw new Error("The Supabase library could not load. Check the internet connection and refresh.");
+  if (!/^https:\/\/[^ ]+\.supabase\.co/.test(SUPABASE_URL) || SUPABASE_ANON_KEY.startsWith("PASTE")) throw new Error("Open this file in a text editor and paste your Supabase project URL and anon key at the top of the script, then refresh.");
+  db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch (e) { $("v").innerHTML = '<div class="box"><h2>Setup needed</h2><p class="err"></p></div>'; $("v").querySelector("p").textContent = e.message; throw e; }
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const say = (id, t, bad) => { $(id).className = bad ? "err" : "ok"; $(id).textContent = t; };
+const money = n => "₹" + Number(n || 0).toLocaleString("en-IN");
+const dt = d => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+const today = new Date().toISOString().slice(0, 10);
+const pane = h => { $("pane").innerHTML = h; };
+const classOf = async c => (await db.from("students").select("id,admission_no,name").eq("class", c).order("name")).data || [];
+let me = null;
+const OFFICE = ["clerk", "principal", "owner"], TOP = ["principal", "owner"];
+const NAMES = { dash: "Overview", students: "Students", att: "Attendance", marks: "Marks", fees: "Fees", publish: "Publish", audit: "History", staff: "Staff and roles", kids: "My children" };
+const BY = { parent: ["kids"], teacher: ["students","att","marks"], clerk: ["dash","students","att","marks","fees","publish"],
+  principal: ["dash","students","att","marks","fees","publish","audit"], owner: ["dash","students","att","marks","fees","publish","audit","staff"] };
+const can = list => me && list.includes(me.role);
+
+/* ---------- session ---------- */
+async function loadMe(){
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { me = null; return; }
+  const get = () => db.from("profiles").select("role,full_name").eq("id", session.user.id).single();
+  let { data: p } = await get();
+  if (p && p.role === "none") { await db.rpc("activate_invite"); ({ data: p } = await get()); }
+  me = { id: session.user.id, email: session.user.email, name: p?.full_name || session.user.email, role: p?.role || "none" };
+}
+function bar(){
+  $("brand").textContent = CFG.name;
+  $("nav").innerHTML = '<button class="alt" data-n="home">Home</button> ' + (me ? '<button class="alt" data-n="portal">Portal</button> <button class="alt" data-n="out">Log out</button>' : '<button class="alt" data-n="login">Log in</button>');
+}
+$("nav").onclick = async e => {
+  const n = e.target.dataset.n; if (!n) return;
+  if (n === "home") home(); else if (n === "portal") portal(); else if (n === "login") loginView();
+  else { await db.auth.signOut(); me = null; home(); }
+};
+db.auth.onAuthStateChange(async ev => {
+  if (ev !== "SIGNED_IN") return;
+  await loadMe();
+  if (sessionStorage.wantPortal) { sessionStorage.removeItem("wantPortal"); portal(); } else bar();
+});
+
+/* ---------- public home ---------- */
+async function home(){
+  bar();
+  $("v").innerHTML = `<section class="hero" style="margin:0 -16px;padding:36px 16px 48px"><h1>${esc(CFG.name)}</h1><p>${esc(CFG.welcome)}</p><p><button id="hp">${me ? "Open portal" : "Parent and staff login"}</button></p></section>
+    <div id="secs"><p class="msg">Loading…</p></div>
+    <footer>${esc(CFG.address)}<br>${esc(CFG.phone)} · ${esc(CFG.email)}</footer>`;
+  $("hp").onclick = me ? portal : loginView;
+  const { data, error } = await db.from("posts").select("*").eq("published", true).order("created_at", { ascending: false }).limit(80);
+  if (error) { $("secs").innerHTML = '<p class="err">Could not load updates. Please try again later.</p>'; return; }
+  const html = Object.entries(SECTIONS).map(([k, name]) => {
+    let l = data.filter(p => p.section === k);
+    if (k === "events") l = l.filter(p => !p.event_date || p.event_date >= today).sort((a, b) => (a.event_date || "").localeCompare(b.event_date || ""));
+    l = l.slice(0, 6);
+    return l.length ? `<section><h2>${name}</h2><div class="grid">${l.map(p => `<article class="card ${k === "events" ? "ev" : ""}"><div class="meta">${dt(k === "events" && p.event_date ? p.event_date : p.created_at)}</div><h3>${esc(p.title)}</h3><p>${esc(p.body)}</p></article>`).join("")}</div></section>` : "";
+  }).join("");
+  $("secs").innerHTML = html || '<p class="msg">No updates yet.</p>';
+}
+
+/* ---------- login and parent registration ---------- */
+function loginView(){
+  bar();
+  $("v").innerHTML = `<div class="box" style="margin-top:20px"><h2>Log in</h2><p class="meta">Parents: use the email address you gave the school. Staff: use the email the owner registered.</p>
+    <button id="g">Continue with Google</button>
+    <label>Or get a login link by email<input id="em" type="email" autocomplete="email" placeholder="you@example.com"></label>
+    <p><button class="alt" id="mail">Send login link</button></p><p id="lm" role="status"></p></div>`;
+  $("g").onclick = () => { sessionStorage.wantPortal = 1; db.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } }); };
+  $("mail").onclick = async () => {
+    const email = $("em").value.trim(); if (!email) return say("lm", "Enter your email first.", 1);
+    sessionStorage.wantPortal = 1;
+    const { error } = await db.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+    say("lm", error ? "Could not send the link: " + error.message : "Login link sent. Open it on this device.", error);
+  };
+}
+const claimBox = () => `<div class="box"><h2>Link your child</h2><p class="meta">Log in with the email the school has on file, then enter the admission number and date of birth from the admission form.</p>
+  <div class="row"><label>Admission number<input id="ca"></label><label>Child's date of birth<input id="cd" type="date"></label></div>
+  <p><button id="cb">Link child</button> <span id="cm" role="status"></span></p></div>`;
+function bindClaim(){
+  $("cb").onclick = async () => {
+    if (!$("ca").value.trim() || !$("cd").value) return say("cm", "Enter both details.", 1);
+    const { data, error } = await db.rpc("claim_student", { adm: $("ca").value, birth: $("cd").value });
+    if (error) return say("cm", error.message, 1);
+    if (!data) return say("cm", "We could not match these details. Check them or contact the school office.", 1);
+    await loadMe(); portal();
+  };
+}
+
+/* ---------- portal (screens depend on role) ---------- */
+function portal(){
+  bar();
+  if (!me) return loginView();
+  if (me.role === "none") { $("v").innerHTML = `<div style="margin-top:16px"><p>Logged in as <b>${esc(me.email)}</b>.</p>${claimBox()}<p class="meta">Staff: ask the owner to give your account a role, then log in again.</p></div>`; return bindClaim(); }
+  $("v").innerHTML = `<div class="meta" style="margin-top:12px">${esc(me.name)} · ${me.role}</div><div class="tabs" id="tabs">${BY[me.role].map(k => `<button data-t="${k}">${NAMES[k]}</button>`).join("")}</div><div id="pane"></div>`;
+  $("tabs").onclick = e => { const t = e.target.dataset.t; if (t) go(t); };
+  go(BY[me.role][0]);
+}
+function go(t){
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.t === t));
+  ({ dash, students, att, marks, fees, publish, audit, staff, kids })[t]();
+}
+
+async function dash(){
+  const first = today.slice(0, 8) + "01";
+  const [a, b, c, d] = await Promise.all([
+    db.from("students").select("id", { count: "exact", head: true }),
+    db.from("students").select("id", { count: "exact", head: true }).gte("admitted_on", first),
+    db.from("attendance").select("present").eq("day", today),
+    db.from("fees").select("amount,paid")]);
+  const at = c.data || [], pr = at.filter(x => x.present).length;
+  const due = (d.data || []).reduce((s, x) => s + x.amount - x.paid, 0);
+  const stat = (n, l) => `<div class="card"><div class="big">${n}</div><div class="meta">${l}</div></div>`;
+  pane(`<div class="grid">${stat(a.count ?? 0, "Total students")}${stat(b.count ?? 0, "Admitted this month")}${stat(at.length ? Math.round(pr * 100 / at.length) + "%" : "Not taken", "Attendance today")}${stat(money(due), "Fees outstanding")}</div>`);
+}
+
+async function students(){
+  const { data = [] } = await db.from("students").select("id,admission_no,name,class,parent_email,admitted_on").order("class").order("name").limit(1500);
+  pane((can(OFFICE) ? `<div class="box"><h2>New admission</h2><div class="row"><label>Admission number<input id="an"></label><label>Class (for example 5-A)<input id="cl"></label>
+    <label>Student name<input id="nm"></label><label>Date of birth<input id="db" type="date"></label></div>
+    <label>Parent email (the parent logs in with this)<input id="pe" type="email"></label><p><button id="add">Admit student</button> <span id="m" role="status"></span></p></div>` : "") +
+    `<div class="box"><h2>Students (${data.length})</h2><label>Search by name, class or number<input id="q"></label><div id="sl"></div></div>`);
+  const draw = () => {
+    const q = $("q").value.toLowerCase();
+    $("sl").innerHTML = data.filter(s => (s.name + s.class + s.admission_no).toLowerCase().includes(q)).slice(0, 200).map(s => `<div class="line"><div><b>${esc(s.name)}</b> <span class="meta">${esc(s.admission_no)} · Class ${esc(s.class)} · admitted ${dt(s.admitted_on)}<br>${esc(s.parent_email)}</span></div>
+      <div>${can(OFFICE) ? `<button class="alt" data-a="edit" data-id="${s.id}" data-n="${esc(s.name)}" data-c="${esc(s.class)}">Edit</button> ` : ""}${can(TOP) ? `<button class="alt" data-a="del" data-id="${s.id}">Delete</button>` : ""}</div></div>`).join("") || '<p class="msg">No students found.</p>';
+  };
+  draw(); $("q").oninput = draw;
+  $("sl").onclick = async e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.a === "del") { if (!confirm("Delete this student and all their records? The change is kept in History.")) return; await db.from("students").delete().eq("id", b.dataset.id); }
+    else { const n = prompt("Student name", b.dataset.n); if (!n) return; const c = prompt("Class", b.dataset.c); if (!c) return; await db.from("students").update({ name: n.trim(), class: c.trim() }).eq("id", b.dataset.id); }
+    students();
+  };
+  if (can(OFFICE)) $("add").onclick = async () => {
+    const r = { admission_no: $("an").value.trim(), name: $("nm").value.trim(), class: $("cl").value.trim(), dob: $("db").value, parent_email: $("pe").value.trim().toLowerCase() };
+    if (Object.values(r).some(v => !v)) return say("m", "Fill every field.", 1);
+    const { error } = await db.from("students").insert(r);
+    if (error) return say("m", "Not saved: " + error.message, 1);
+    students();
+  };
+}
+
+function att(){
+  pane(`<div class="box"><h2>Attendance</h2><div class="row"><label>Class<input id="c"></label><label>Date<input id="d" type="date" value="${today}"></label></div>
+    <p><button id="ld">Load class</button></p><div id="rows"></div><p><button id="sv" style="display:none">Save attendance</button> <span id="m" role="status"></span></p></div>`);
+  $("ld").onclick = async () => {
+    const s = await classOf($("c").value.trim());
+    const { data: ex = [] } = await db.from("attendance").select("student_id,present").eq("day", $("d").value).in("student_id", s.map(x => x.id));
+    const was = Object.fromEntries(ex.map(x => [x.student_id, x.present]));
+    $("rows").innerHTML = s.map(x => `<label class="chk"><input type="checkbox" data-id="${x.id}" ${was[x.id] === false ? "" : "checked"}> ${esc(x.name)} <span class="meta">${esc(x.admission_no)}</span></label>`).join("") || '<p class="msg">No students in this class.</p>';
+    $("sv").style.display = s.length ? "" : "none";
+  };
+  $("sv").onclick = async () => {
+    const rows = [...document.querySelectorAll("#rows input")].map(i => ({ student_id: i.dataset.id, day: $("d").value, present: i.checked }));
+    const { error } = await db.from("attendance").upsert(rows, { onConflict: "student_id,day" });
+    say("m", error ? error.message : "Saved. Checked means present.", error);
+  };
+}
+
+function marks(){
+  pane(`<div class="box"><h2>Enter marks</h2><div class="row"><label>Class<input id="c"></label><label>Exam (for example Term 1)<input id="ex"></label><label>Subject<input id="sub"></label><label>Maximum marks<input id="mx" type="number" value="100"></label></div>
+    <p><button id="ld">Load class</button></p><div id="rows"></div><p><button id="sv" style="display:none">Save marks</button> <span id="m" role="status"></span></p></div>`);
+  $("ld").onclick = async () => {
+    const s = await classOf($("c").value.trim());
+    const { data: ex = [] } = await db.from("marks").select("student_id,score").eq("exam", $("ex").value.trim()).eq("subject", $("sub").value.trim()).in("student_id", s.map(x => x.id));
+    const was = Object.fromEntries(ex.map(x => [x.student_id, x.score]));
+    $("rows").innerHTML = s.map(x => `<div class="line"><span>${esc(x.name)} <span class="meta">${esc(x.admission_no)}</span></span><input class="sc" type="number" step="0.5" aria-label="Marks for ${esc(x.name)}" data-id="${x.id}" value="${was[x.id] ?? ""}"></div>`).join("") || '<p class="msg">No students in this class.</p>';
+    $("sv").style.display = s.length ? "" : "none";
+  };
+  $("sv").onclick = async () => {
+    const exam = $("ex").value.trim(), subject = $("sub").value.trim(), max = Number($("mx").value);
+    if (!exam || !subject || !max) return say("m", "Fill exam, subject and maximum marks.", 1);
+    const rows = [...document.querySelectorAll("#rows input")].filter(i => i.value !== "").map(i => ({ student_id: i.dataset.id, exam, subject, score: Number(i.value), max_score: max }));
+    if (rows.some(r => r.score < 0 || r.score > max)) return say("m", "A mark is outside 0 to the maximum.", 1);
+    const { error } = await db.from("marks").upsert(rows, { onConflict: "student_id,exam,subject" });
+    say("m", error ? error.message : "Marks saved.", error);
+  };
+}
+
+function fees(){
+  pane(`<div class="box"><h2>Add a fee for a whole class</h2><div class="row"><label>Class<input id="fc"></label><label>Fee name (for example Term 1)<input id="ft"></label><label>Amount per student (₹)<input id="fa" type="number"></label><label>Due date<input id="fd" type="date"></label></div>
+    <p><button id="fadd">Add fee</button> <span id="m" role="status"></span></p></div>
+    <div class="box"><h2>Fee records</h2><label>Class<input id="vc"></label><p><button id="vl">Show</button></p><div id="rows"></div></div>`);
+  $("fadd").onclick = async () => {
+    const s = await classOf($("fc").value.trim()), amount = Number($("fa").value), term = $("ft").value.trim();
+    if (!s.length || !amount || !term) return say("m", "Check class, fee name and amount.", 1);
+    const { error } = await db.from("fees").insert(s.map(x => ({ student_id: x.id, term, amount, due_date: $("fd").value || null })));
+    say("m", error ? error.message : `Fee added for ${s.length} students.`, error);
+  };
+  const list = async () => {
+    const { data = [], error } = await db.from("fees").select("id,term,amount,paid,due_date,students!inner(name,class)").eq("students.class", $("vc").value.trim()).order("term");
+    if (error) { $("rows").innerHTML = `<p class="err">${esc(error.message)}</p>`; return; }
+    $("rows").innerHTML = data.map(f => { const bal = f.amount - f.paid; return `<div class="line"><div><b>${esc(f.students.name)}</b> <span class="meta">${esc(f.term)} · due ${esc(f.due_date || "-")}</span><br>${money(f.amount)} · paid ${money(f.paid)} · <b class="${bal > 0 ? "err" : "ok"}">${bal > 0 ? "balance " + money(bal) : "paid in full"}</b></div>${bal > 0 ? `<button class="alt" data-id="${f.id}" data-p="${f.paid}" data-b="${bal}">Record payment</button>` : ""}</div>`; }).join("") || '<p class="msg">No fee records.</p>';
+  };
+  $("vl").onclick = list;
+  $("rows").onclick = async e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const amt = Number(prompt("Amount received (₹). Balance is " + b.dataset.b));
+    if (!amt || amt <= 0 || amt > Number(b.dataset.b)) return alert("Enter an amount up to the balance.");
+    await db.from("fees").update({ paid: Number(b.dataset.p) + amt }).eq("id", b.dataset.id);
+    list();
+  };
+}
+
+async function publish(){
+  pane(`<div class="box"><h2>Write for the public website</h2><div class="row"><label>Section<select id="sec">${Object.entries(SECTIONS).map(([k, n]) => `<option value="${k}">${n}</option>`).join("")}</select></label><label>Event date (events only)<input id="date" type="date"></label></div>
+    <label>Title<input id="title" maxlength="120"></label><label>Details<textarea id="body"></textarea></label>
+    <label class="chk" style="border:0"><input type="checkbox" id="pub" checked> Show on the public website now</label>
+    <p><button id="go">Save</button> <span id="m" role="status"></span></p></div><div class="box"><h2>All posts</h2><div id="list"></div></div>`);
+  $("go").onclick = async () => {
+    const title = $("title").value.trim(); if (!title) return say("m", "Add a title.", 1);
+    const { error } = await db.from("posts").insert({ section: $("sec").value, title, body: $("body").value.trim() || null, event_date: $("date").value || null, published: $("pub").checked });
+    if (error) return say("m", "Not saved: " + error.message, 1);
+    publish();
+  };
+  const { data = [] } = await db.from("posts").select("*").order("created_at", { ascending: false }).limit(60);
+  $("list").innerHTML = data.map(p => `<div class="line"><div><div class="meta">${SECTIONS[p.section]} · ${p.published ? "On public website" : "Hidden"} · ${dt(p.created_at)}</div><b>${esc(p.title)}</b></div>
+    <div><button class="alt" data-a="tog" data-id="${p.id}" data-v="${p.published}">${p.published ? "Hide" : "Show"}</button> ${can(TOP) ? `<button class="alt" data-a="del" data-id="${p.id}">Delete</button>` : ""}</div></div>`).join("") || '<p class="msg">No posts yet.</p>';
+  $("list").onclick = async e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.a === "del") { if (!confirm("Delete this post?")) return; await db.from("posts").delete().eq("id", b.dataset.id); }
+    else await db.from("posts").update({ published: b.dataset.v !== "true" }).eq("id", b.dataset.id);
+    publish();
+  };
+}
+
+async function audit(){
+  const { data = [], error } = await db.from("audit_log").select("*").order("at", { ascending: false }).limit(80);
+  pane(`<div class="box"><h2>History of changes</h2>${error ? `<p class="err">${esc(error.message)}</p>` : ""}${data.map(a => { const r = a.new_row || a.old_row || {}; return `<div class="line"><div><b>${esc(a.action)}</b> in ${esc(a.tbl)}: ${esc(r.name || r.title || r.term || r.subject || r.email || "")}<br><span class="meta">${esc(a.who)} · ${new Date(a.at).toLocaleString("en-IN")}</span></div></div>`; }).join("") || '<p class="msg">No changes recorded yet.</p>'}</div>`);
+}
+
+async function staff(){
+  const { data = [] } = await db.from("profiles").select("id,email,full_name,role").order("role");
+  const opts = sel => ["none","parent","teacher","clerk","principal","owner"].map(r => `<option ${r === sel ? "selected" : ""}>${r}</option>`).join("");
+  pane(`<div class="box"><h2>Give a role</h2><p class="meta">Works even if the person has not logged in yet. The role applies at their first login.</p>
+    <div class="row"><label>Email<input id="se" type="email"></label><label>Role<select id="sr">${opts("teacher")}</select></label></div><p><button id="sb">Save role</button> <span id="m" role="status"></span></p></div>
+    <div class="box"><h2>Accounts</h2>${data.map(p => `<div class="line"><div><b>${esc(p.full_name)}</b><br><span class="meta">${esc(p.email)}</span></div>${p.id === me.id ? '<span class="meta">you</span>' : `<select data-e="${esc(p.email)}" aria-label="Role for ${esc(p.email)}">${opts(p.role)}</select>`}</div>`).join("")}</div>`);
+  const setRole = async (email, role) => { const { error } = await db.rpc("set_role", { p_email: email, p_role: role }); return error; };
+  $("sb").onclick = async () => { const e = $("se").value.trim(); if (!e) return say("m", "Enter an email.", 1); const err = await setRole(e, $("sr").value); if (err) return say("m", err.message, 1); staff(); };
+  $("pane").onchange = async e => { const s = e.target.closest("select[data-e]"); if (!s) return; const err = await setRole(s.dataset.e, s.value); if (err) alert(err.message); staff(); };
+}
+
+async function kids(){
+  const { data: s = [] } = await db.from("students").select("id,name,class,admission_no");
+  if (!s.length) { pane(claimBox()); return bindClaim(); }
+  const ids = s.map(x => x.id);
+  const [a, m, f] = await Promise.all([
+    db.from("attendance").select("student_id,present").in("student_id", ids),
+    db.from("marks").select("student_id,exam,subject,score,max_score").in("student_id", ids).order("exam"),
+    db.from("fees").select("student_id,term,amount,paid,due_date").in("student_id", ids)]);
+  pane(s.map(k => {
+    const at = (a.data || []).filter(x => x.student_id === k.id), pr = at.filter(x => x.present).length;
+    return `<div class="box"><h2>${esc(k.name)}</h2><p class="meta">Class ${esc(k.class)} · Admission no ${esc(k.admission_no)}</p>
+    <h3>Attendance</h3><p>${at.length ? `${Math.round(pr * 100 / at.length)}% present (${pr} of ${at.length} days recorded)` : "No attendance recorded yet."}</p>
+    <h3>Marks</h3>${(m.data || []).filter(x => x.student_id === k.id).map(x => `<div class="line"><span>${esc(x.exam)} · ${esc(x.subject)}</span><b>${x.score} / ${x.max_score}</b></div>`).join("") || '<p class="msg">No marks yet.</p>'}
+    <h3>Fees</h3>${(f.data || []).filter(x => x.student_id === k.id).map(x => { const bal = x.amount - x.paid; return `<div class="line"><span>${esc(x.term)} <span class="meta">due ${esc(x.due_date || "-")}</span></span><b class="${bal > 0 ? "err" : "ok"}">${bal > 0 ? "balance " + money(bal) : "paid"}</b></div>`; }).join("") || '<p class="msg">No fees recorded.</p>'}</div>`;
+  }).join("") + '<div id="more"></div>');
+  $("more").innerHTML = claimBox(); bindClaim();
+}
+
+loadMe().then(home);
+</script>
+</body>
+</html>
